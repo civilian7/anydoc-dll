@@ -288,4 +288,4 @@ delphi\demo\              VCL demo (dpr/pas/dfm/manifest/rc + build_demo.ps1)
 
 MIT — see [LICENSE](LICENSE).
 
-The upstream [anydoc](https://github.com/firecrawl/anydoc) crate is MIT licensed as well; the binary produced by this project embeds it, so keep its notice when redistributing.
+The upstream [anydoc](https://github.com/firecrawl/anydoc) crate is MIT licensed as well. The binary produced by this project links it statically, so keep its notice when redistributing — see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

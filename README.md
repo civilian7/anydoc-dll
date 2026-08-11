@@ -288,4 +288,4 @@ delphi\demo\              VCL 데모 (dpr/pas/dfm/manifest/rc + build_demo.ps1)
 
 **MIT** — [LICENSE](LICENSE) 참조.
 
-업스트림 [anydoc](https://github.com/firecrawl/anydoc) 크레이트도 MIT 다. 이 프로젝트가 만든 바이너리에 함께 링크되므로, 재배포할 때 해당 고지를 유지한다.
+업스트림 [anydoc](https://github.com/firecrawl/anydoc) 크레이트도 MIT 다. 이 프로젝트가 만든 바이너리에 정적으로 링크되므로, 재배포할 때 해당 고지를 유지한다 — [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) 참조.
