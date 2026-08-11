@@ -1,6 +1,6 @@
 [package]
 name = "sc_anydoc"
-version = "1.0.0"
+version = "1.1.0"
 edition = "2024"
 # anydoc 코어가 요구하는 최소 버전
 rust-version = "1.88"
