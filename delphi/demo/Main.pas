@@ -1,4 +1,4 @@
-// anydoc VCL 데모 — 문서를 GitHub Flavored Markdown 으로 변환해 보여준다.
+﻿// anydoc VCL 데모 — 문서를 GitHub Flavored Markdown 으로 변환해 보여준다.
 //
 // 화면에 노출되는 문구는 모두 영문이다. 실패 문구는 TSCAnydoc 이 조립한 한글
 // Message 대신 EAnydocError 의 Status 와 Detail(코어가 준 영문 원문)로 직접 만든다.
@@ -24,7 +24,9 @@ uses
   Vcl.Dialogs,
   Vcl.StdCtrls,
   Vcl.ExtCtrls,
-  Vcl.ComCtrls;
+  Vcl.ComCtrls,
+  Vcl.Edge,
+  Preview;
 {$ENDREGION}
 
 type
@@ -32,19 +34,32 @@ type
     pnlTop: TPanel;
     btnOpen: TButton;
     btnSave: TButton;
+    chkUtf8Bom: TCheckBox;
     lblFile: TLabel;
+    pgcMain: TPageControl;
+    tabSource: TTabSheet;
     memMarkdown: TMemo;
+    tabPreview: TTabSheet;
+    lblPreviewNotice: TLabel;
+    edgePreview: TEdgeBrowser;
     sbStatus: TStatusBar;
     dlgOpen: TOpenDialog;
     dlgSave: TSaveDialog;
     procedure FormCreate(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure btnOpenClick(Sender: TObject);
     procedure btnSaveClick(Sender: TObject);
+    procedure memMarkdownChange(Sender: TObject);
+    procedure pgcMainChange(Sender: TObject);
   private
     FBusy: Boolean;
     FFileName: string;
+    FPreview: TMarkdownPreview;
+    FPreviewDirty: Boolean;
     procedure ConvertFile(const AFileName: string);
+    procedure PreviewUnavailable(Sender: TObject; const AMessage: string);
+    procedure RefreshPreview;
     procedure ShowFailure(const AFileName, AError: string);
     procedure ShowSuccess(const AFileName, AMarkdown, AFormat: string; const AElapsedMs: Int64);
     procedure UpdateControls;
@@ -62,6 +77,7 @@ implementation
 
 {$REGION 'uses'}
 uses
+  System.StrUtils,
   System.IOUtils,
   System.Diagnostics,
   Winapi.ShellAPI,
@@ -122,9 +138,17 @@ begin
     Exit;
   end;
 
-  // 마크다운은 UTF-8 로 저장한다.
-  TFile.WriteAllText(dlgSave.FileName, memMarkdown.Lines.Text, TEncoding.UTF8);
-  sbStatus.Panels[PANEL_STATE].Text := 'Saved: ' + TPath.GetFileName(dlgSave.FileName);
+  // 마크다운은 UTF-8 로 저장한다. BOM 은 체크박스로 선택 — TEncoding.UTF8 싱글턴은
+  // preamble 을 항상 쓰므로, BOM 유무를 지정한 인스턴스를 직접 만들어 넘긴다.
+  var LEncoding: TEncoding := TUTF8Encoding.Create(chkUtf8Bom.Checked);
+  try
+    TFile.WriteAllText(dlgSave.FileName, memMarkdown.Lines.Text, LEncoding);
+  finally
+    LEncoding.Free;
+  end;
+
+  sbStatus.Panels[PANEL_STATE].Text := Format('Saved: %s (%s)',
+    [TPath.GetFileName(dlgSave.FileName), IfThen(chkUtf8Bom.Checked, 'UTF-8 with BOM', 'UTF-8')]);
 end;
 
 procedure TfrmMain.ConvertFile(const AFileName: string);
@@ -219,6 +243,10 @@ end;
 
 procedure TfrmMain.FormCreate(Sender: TObject);
 begin
+  // WebView2 초기화는 Preview 탭을 처음 열 때까지 미뤄진다.
+  FPreview := TMarkdownPreview.Create(edgePreview);
+  FPreview.OnUnavailable := PreviewUnavailable;
+
   dlgOpen.Filter :=
     'All supported documents|*.doc;*.docx;*.docm;*.odt;*.rtf;*.epub;*.pdf;' +
     '*.ppt;*.pptx;*.pptm;*.odp;*.xls;*.xlsx;*.xlsm;*.xlsb;*.ods;*.csv|' +
@@ -254,6 +282,53 @@ begin
       'Build the DLL with build_anydoc.ps1.';
     btnOpen.Enabled := False;
   end;
+end;
+
+procedure TfrmMain.FormDestroy(Sender: TObject);
+begin
+  FreeAndNil(FPreview);
+end;
+
+// 변환 결과가 들어오든 사용자가 직접 고치든 프리뷰는 낡은 것이 된다.
+procedure TfrmMain.memMarkdownChange(Sender: TObject);
+begin
+  FPreviewDirty := True;
+
+  // Preview 탭을 이미 보고 있는 중이라면 탭 전환이 없으므로 여기서 반영한다.
+  RefreshPreview;
+end;
+
+procedure TfrmMain.pgcMainChange(Sender: TObject);
+begin
+  RefreshPreview;
+end;
+
+// WebView2 를 못 쓰는 환경에서도 변환 기능은 그대로 쓸 수 있어야 한다.
+// 브라우저를 감추고 이유만 탭 안에 남긴다.
+procedure TfrmMain.PreviewUnavailable(Sender: TObject; const AMessage: string);
+begin
+  edgePreview.Visible := False;
+  lblPreviewNotice.Caption := AMessage;
+  lblPreviewNotice.Visible := True;
+  sbStatus.Panels[PANEL_STATE].Text := 'Preview unavailable.';
+end;
+
+// 프리뷰가 실제로 보이는 동안에만 그린다. 그 외에는 dirty 표시만 남겨 두고
+// 다음 탭 진입에서 한 번에 반영한다.
+procedure TfrmMain.RefreshPreview;
+begin
+  if (pgcMain.ActivePage <> tabPreview) or FPreview.IsUnavailable then
+  begin
+    Exit;
+  end;
+
+  if FPreviewDirty then
+  begin
+    FPreview.SetMarkdown(memMarkdown.Lines.Text);
+    FPreviewDirty := False;
+  end;
+
+  FPreview.Show;
 end;
 
 procedure TfrmMain.ShowFailure(const AFileName, AError: string);

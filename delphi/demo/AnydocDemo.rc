@@ -1,1 +1,5 @@
 1 24 "AnydocDemo.manifest"
+
+/* 마크다운 프리뷰용 리소스. Preview.pas 가 RCDATA 로 읽어 조립한다. */
+PREVIEW_HTML RCDATA "preview.html"
+MARKED_JS    RCDATA "marked.min.js"

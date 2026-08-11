@@ -2,7 +2,8 @@
 #   .\build_demo.ps1                  # Win64
 #   .\build_demo.ps1 -Platform Win32
 #
-# sc_anydoc.dll 을 실행 파일 옆에 함께 복사하므로 PATH 설정 없이 바로 실행된다.
+# sc_anydoc.dll 과 WebView2Loader.dll 을 실행 파일 옆에 함께 복사하므로
+# PATH 설정 없이 바로 실행된다.
 # IDE 에서 열려면 AnydocDemo.dpr 을 File > Open Project 로 열면 .dproj 가 자동 생성된다.
 param(
   [ValidateSet('Win64', 'Win32')]
@@ -18,6 +19,11 @@ $root = $PSScriptRoot
 $dcc = if ($Platform -eq 'Win32') { 'dcc32.exe' } else { 'dcc64.exe' }
 $dll = if ($Platform -eq 'Win32') { Join-Path $DeployRoot 'win32\sc_anydoc.dll' } else { Join-Path $DeployRoot 'sc_anydoc.dll' }
 $outDir = Join-Path $root $Platform
+
+# WebView2 loader. Delphi 13 은 loader 를 실행 파일에 정적 링크하므로 데모가 이 DLL 을
+# 로드하지는 않는다. 배포 묶음의 완결성을 위해 아키텍처에 맞는 것을 함께 둔다.
+$loaderArch = if ($Platform -eq 'Win32') { 'x86' } else { 'x64' }
+$loader = Join-Path $root "webview2\$loaderArch\WebView2Loader.dll"
 
 New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 
@@ -47,6 +53,13 @@ if (-not (Test-Path $dll)) {
 }
 
 Copy-Item $dll $outDir -Force
+
+if (Test-Path $loader) {
+  Copy-Item $loader $outDir -Force
+}
+else {
+  Write-Warning "WebView2Loader.dll 없음: $loader  (프리뷰 동작에는 영향 없음)"
+}
 
 $exe = Join-Path $outDir 'AnydocDemo.exe'
 Write-Host ''

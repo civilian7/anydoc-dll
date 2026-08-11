@@ -11,3 +11,7 @@
 *.identcache
 *.local
 *.~*
+
+# 데모와 함께 배포하는 WebView2 loader 원본은 예외로 추적한다.
+!/delphi/demo/webview2/x64/WebView2Loader.dll
+!/delphi/demo/webview2/x86/WebView2Loader.dll

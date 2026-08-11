@@ -223,8 +223,23 @@ What the demo shows:
 - Conversion runs on a **worker thread**, with only the UI update delegated through `TThread.Queue`
 - `FormCloseQuery` blocks closing mid-conversion, preventing the queued code from touching a destroyed form
 - Failure cause shown via `EAnydocError.Status` / `Detail`
-- Status bar with format, elapsed time and core version; saves the result as UTF-8 `.md`
+- Status bar with format, elapsed time and core version; saves the result as UTF-8 `.md` (a **UTF-8 BOM** checkbox controls the byte order mark; off by default)
+- A **Preview tab** that renders the Markdown with `TEdgeBrowser` (WebView2) — see below
 - **PerMonitorV2** DPI manifest included
+
+### Markdown preview
+
+`Preview.pas` drives a `TEdgeBrowser` as the preview surface. Markdown-to-HTML conversion is done by
+[marked](https://github.com/markedjs/marked); neither `sc_anydoc.dll` nor the C ABI is involved.
+
+- **The shell page loads once.** `preview.html` inlines the whole of `marked.min.js` (both are `RCDATA` resources) and is shown with `NavigateToString`; every later update travels through `PostWebMessageAsString` as raw text — no re-navigation, no JS string escaping
+- **Initialization is deferred** until the Preview tab is opened for the first time, so users who never open it pay nothing for WebView2
+- Source edits only set a dirty flag; the actual render happens when the tab becomes visible
+- A CSP blocks external resources — only inline script/style and `https` images are allowed
+- Links inside the document are not followed in the WebView; they are handed to the default browser via `ShellExecute`
+- **If the WebView2 runtime is missing**, the tab explains why and conversion/saving keep working. The runtime is a system-installed component, not a file you copy next to the executable
+
+`build_demo.ps1` copies the matching `WebView2Loader.dll` (`webview2\x64` / `webview2\x86`) next to the executable along with `sc_anydoc.dll`. Note that **Delphi 13 statically links the loader into the executable, so the demo never actually loads this DLL** — it ships purely for completeness of the deployment set.
 
 ---
 

@@ -13,6 +13,7 @@
   Position = poScreenCenter
   OnCloseQuery = FormCloseQuery
   OnCreate = FormCreate
+  OnDestroy = FormDestroy
   TextHeight = 15
   object pnlTop: TPanel
     Left = 0
@@ -27,7 +28,7 @@
     Padding.Bottom = 10
     TabOrder = 0
     object lblFile: TLabel
-      Left = 316
+      Left = 436
       Top = 17
       Width = 226
       Height = 15
@@ -52,22 +53,73 @@
       TabOrder = 1
       OnClick = btnSaveClick
     end
+    object chkUtf8Bom: TCheckBox
+      Left = 312
+      Top = 16
+      Width = 110
+      Height = 17
+      Hint = 'Write a UTF-8 byte order mark (EF BB BF) at the start of the file'
+      Caption = 'UTF-8 BOM'
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 2
+    end
   end
-  object memMarkdown: TMemo
+  object pgcMain: TPageControl
     Left = 0
     Top = 49
     Width = 904
     Height = 533
+    ActivePage = tabSource
     Align = alClient
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clWindowText
-    Font.Height = -13
-    Font.Name = 'Consolas'
-    Font.Style = []
-    ParentFont = False
-    ScrollBars = ssBoth
     TabOrder = 1
-    WordWrap = False
+    OnChange = pgcMainChange
+    object tabSource: TTabSheet
+      Caption = 'Source'
+      object memMarkdown: TMemo
+        Left = 0
+        Top = 0
+        Width = 896
+        Height = 503
+        Align = alClient
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -13
+        Font.Name = 'Consolas'
+        Font.Style = []
+        ParentFont = False
+        ScrollBars = ssBoth
+        TabOrder = 0
+        WordWrap = False
+        OnChange = memMarkdownChange
+      end
+    end
+    object tabPreview: TTabSheet
+      Caption = 'Preview'
+      ImageIndex = 1
+      object lblPreviewNotice: TLabel
+        Left = 0
+        Top = 0
+        Width = 896
+        Height = 45
+        Align = alTop
+        Alignment = taCenter
+        AutoSize = False
+        Caption = 'Preview is unavailable.'
+        Layout = tlCenter
+        Visible = False
+        WordWrap = True
+        ExplicitWidth = 116
+      end
+      object edgePreview: TEdgeBrowser
+        Left = 0
+        Top = 0
+        Width = 896
+        Height = 503
+        Align = alClient
+        TabOrder = 0
+      end
+    end
   end
   object sbStatus: TStatusBar
     Left = 0

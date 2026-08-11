@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<!--
+  마크다운 프리뷰 셸 페이지.
+
+  Preview.pas 가 리소스에서 이 파일을 읽어 아래 script 블록의 자리 표시자를
+  marked.min.js 로 바꿔치기한 뒤 NavigateToString 으로 한 번만 띄운다. 이후 마크다운은
+  PostWebMessageAsString 으로 전달되므로 재탐색도 문자열 이스케이프도 없다.
+
+  주의: 자리 표시자는 이 파일에 딱 한 번만 등장해야 한다 — 치환은 첫 항목만 바꾼다.
+
+  CSP 로 스크립트/스타일은 인라인만 허용한다. 원격 이미지는 마크다운 문서에
+  자주 등장하므로 https 만 열어 둔다.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: https:;">
+<title>Markdown Preview</title>
+<style>
+  /* GitHub 문서 화면에 가깝게. 크기는 모두 상대 단위 — WebView2 가 DPI 를 처리한다. */
+  :root {
+    color-scheme: light;
+    --fg: #1f2328;
+    --muted: #59636e;
+    --border: #d1d9e0;
+    --accent: #0969da;
+    --code-bg: #f6f8fa;
+  }
+
+  body {
+    margin: 0;
+    padding: 2rem 2.5rem 4rem;
+    color: var(--fg);
+    background: #ffffff;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 1rem;
+    line-height: 1.6;
+    word-wrap: break-word;
+  }
+
+  #content > *:first-child {
+    margin-top: 0;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    margin: 1.5em 0 0.6em;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  h1 { font-size: 1.9em; }
+  h2 { font-size: 1.45em; }
+  h3 { font-size: 1.2em; }
+  h4 { font-size: 1em; }
+  h5 { font-size: 0.9em; }
+
+  h6 {
+    font-size: 0.85em;
+    color: var(--muted);
+  }
+
+  h1, h2 {
+    padding-bottom: 0.3em;
+    border-bottom: 1px solid var(--border);
+  }
+
+  p, ul, ol, blockquote, table, pre {
+    margin: 0 0 1em;
+  }
+
+  a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+
+  ul, ol {
+    padding-left: 2em;
+  }
+
+  li + li {
+    margin-top: 0.25em;
+  }
+
+  /* GFM 태스크 리스트는 GitHub 처럼 불릿 없이 체크박스만 보여준다.
+     marked 는 느슨한 리스트에서 체크박스를 <p> 로 한 번 더 감싸므로 두 형태를 모두 잡는다. */
+  li:has(> input[type="checkbox"]),
+  li:has(> p > input[type="checkbox"]) {
+    list-style: none;
+    margin-left: -1.4em;
+  }
+
+  input[type="checkbox"] {
+    margin-right: 0.4em;
+  }
+
+  blockquote {
+    padding: 0 1em;
+    color: var(--muted);
+    border-left: 0.25em solid var(--border);
+  }
+
+  code {
+    padding: 0.2em 0.4em;
+    font-family: Consolas, 'Cascadia Mono', monospace;
+    font-size: 0.9em;
+    background: var(--code-bg);
+    border-radius: 6px;
+  }
+
+  pre {
+    padding: 1em;
+    overflow: auto;
+    background: var(--code-bg);
+    border-radius: 6px;
+  }
+
+  pre code {
+    padding: 0;
+    background: none;
+  }
+
+  table {
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    overflow: auto;
+    border-collapse: collapse;
+  }
+
+  th, td {
+    padding: 0.4em 0.85em;
+    border: 1px solid var(--border);
+  }
+
+  th {
+    font-weight: 600;
+    background: var(--code-bg);
+  }
+
+  tbody tr:nth-child(2n) {
+    background: #f9fafb;
+  }
+
+  img {
+    max-width: 100%;
+  }
+
+  hr {
+    height: 1px;
+    margin: 1.5em 0;
+    background: var(--border);
+    border: 0;
+  }
+
+  /* 문서를 열기 전 빈 화면 대신 보여줄 안내 */
+  #empty {
+    color: var(--muted);
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+<div id="content"><p id="empty">Open a document to see the rendered Markdown here.</p></div>
+
+<script>
+{{MARKED_JS}}
+</script>
+
+<script>
+  // GitHub Flavored Markdown 기준. breaks 는 끄고 GitHub 과 동일하게 둔다.
+  marked.setOptions({ gfm: true, breaks: false });
+
+  // Delphi(PostWebMessageAsString) 가 보낸 마크다운 원문을 그대로 받는다.
+  window.chrome.webview.addEventListener('message', function (event) {
+    var source = event.data || '';
+    var target = document.getElementById('content');
+
+    if (source.trim() === '') {
+      target.innerHTML = '<p id="empty">Nothing to preview.</p>';
+    } else {
+      target.innerHTML = marked.parse(source);
+    }
+
+    window.scrollTo(0, 0);
+  });
+
+  // 셸 로드 완료를 Delphi 에 알린다. 이 신호 전에는 PostWebMessage 가 유실될 수 있다.
+  window.chrome.webview.postMessage('ready');
+</script>
+</body>
+</html>

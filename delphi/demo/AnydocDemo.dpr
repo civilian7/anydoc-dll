@@ -3,6 +3,7 @@
 uses
   Vcl.Forms,
   Main in 'Main.pas' {frmMain},
+  Preview in 'Preview.pas',
   SCAnydoc in '..\src\SCAnydoc.pas';
 
 // PerMonitorV2 DPI 매니페스트 (AnydocDemo.rc -> AnydocDemo.res)

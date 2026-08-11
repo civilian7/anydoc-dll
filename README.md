@@ -223,8 +223,23 @@ cd delphi\demo
 - 변환을 **워커 스레드**에서 수행하고 UI 갱신만 `TThread.Queue` 로 위임
 - `FormCloseQuery` 로 변환 중 종료 차단 — Queue 로 넘긴 코드가 해제된 폼을 건드리는 AV 방지
 - `EAnydocError.Status` / `Detail` 로 실패 원인 표시
-- 상태바에 포맷·소요 시간·코어 버전 표시, 결과를 UTF-8 `.md` 로 저장
+- 상태바에 포맷·소요 시간·코어 버전 표시, 결과를 UTF-8 `.md` 로 저장 (**UTF-8 BOM** 체크박스로 BOM 유무 선택, 기본은 BOM 없음)
+- **Preview 탭**에서 `TEdgeBrowser`(WebView2) 로 마크다운 렌더링 — 아래 참조
 - **PerMonitorV2** DPI 매니페스트 포함
+
+### 마크다운 프리뷰
+
+`Preview.pas` 가 `TEdgeBrowser` 를 프리뷰어로 운전한다. 마크다운 → HTML 변환은
+[marked](https://github.com/markedjs/marked) 가 담당하며, `sc_anydoc.dll` 과 C ABI 는 이 기능에 관여하지 않는다.
+
+- **셸 페이지는 한 번만 로드**한다. `preview.html` 에 `marked.min.js` 를 통째로 인라인해(둘 다 `RCDATA` 리소스) `NavigateToString` 으로 띄운 뒤, 이후 마크다운은 `PostWebMessageAsString` 으로 원문 그대로 넘긴다 — 재탐색도 JS 문자열 이스케이프도 없다
+- **초기화는 Preview 탭을 처음 열 때까지 지연**된다. 프리뷰를 쓰지 않으면 WebView2 생성 비용을 전혀 치르지 않는다
+- 소스가 바뀌면 dirty 로만 표시하고, 실제 렌더는 탭이 보일 때 한 번에 한다
+- CSP 로 외부 리소스를 차단한다. 인라인 스크립트·스타일과 `https` 이미지만 허용
+- 문서 안의 링크는 WebView 안에서 열지 않고 `ShellExecute` 로 기본 브라우저에 넘긴다
+- **WebView2 런타임이 없으면** 프리뷰 탭에 사유를 표시하고 변환·저장 기능은 그대로 동작한다. 런타임은 시스템에 설치되는 구성요소이며 exe 옆에 복사하는 파일이 아니다
+
+`build_demo.ps1` 은 `sc_anydoc.dll` 과 함께 아키텍처에 맞는 `WebView2Loader.dll`(`webview2\x64` / `webview2\x86`)을 실행 파일 옆에 복사한다. 다만 **Delphi 13 은 loader 를 실행 파일에 정적 링크하므로 데모가 이 DLL 을 실제로 로드하지는 않는다** — 배포 묶음의 완결성을 위해 함께 둘 뿐이다.
 
 ---
 
@@ -282,6 +297,10 @@ verify_dll.ps1            ABI 검증 (32비트는 자동 재실행)
 update_upstream.ps1       업스트림 확인 및 반영
 delphi\src\SCAnydoc.pas   Delphi 바인딩
 delphi\demo\              VCL 데모 (dpr/pas/dfm/manifest/rc + build_demo.ps1)
+  Preview.pas             TEdgeBrowser 를 운전하는 마크다운 프리뷰
+  preview.html            프리뷰 셸 페이지 (RCDATA)
+  marked.min.js           마크다운 렌더러 (RCDATA, MIT)
+  webview2\x64|x86\       WebView2Loader.dll (빌드 시 exe 옆으로 복사)
 ```
 
 ## 라이선스
