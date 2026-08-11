@@ -1,0 +1,27 @@
+[package]
+name = "sc_anydoc"
+version = "1.0.0"
+edition = "2024"
+# anydoc 코어가 요구하는 최소 버전
+rust-version = "1.88"
+description = "anydoc(문서 -> GitHub Flavored Markdown) 코어를 Windows DLL(C ABI)로 노출하는 래퍼"
+license = "MIT"
+repository = "https://github.com/civilian7/anydoc-dll"
+publish = false
+
+[lib]
+name = "sc_anydoc"
+crate-type = ["cdylib"]
+
+[dependencies]
+# 업스트림을 포크/벤더링하지 않고 crates.io 로만 참조한다.
+# "0.1" = >=0.1.8, <0.2.0 → 패치/마이너 업데이트는 `cargo update -p anydoc` 한 줄로 반영된다.
+# 정확한 버전은 Cargo.lock 이 고정하며, build.rs 가 그 값을 읽어 DLL 에 새겨 넣는다.
+anydoc = "0.1.8"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
+# FFI 경계에서 catch_unwind 로 패닉을 잡아야 하므로 abort 로 바꾸지 않는다.
+panic = "unwind"

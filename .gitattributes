@@ -1,0 +1,16 @@
+# 델파이 소스는 UTF-8 BOM + CRLF 가 필수다. 체크아웃 시 줄바꿈이 바뀌지 않도록 고정한다.
+*.pas       text eol=crlf
+*.dfm       text eol=crlf
+*.dpr       text eol=crlf
+*.dpk       text eol=crlf
+*.rc        text eol=crlf
+*.manifest  text eol=crlf
+
+# PowerShell 스크립트도 CRLF 로 고정 (일부는 BOM 포함)
+*.ps1       text eol=crlf
+
+# Rust / 문서 / 설정은 LF
+*.rs        text eol=lf
+*.toml      text eol=lf
+*.md        text eol=lf
+*.lock      text eol=lf

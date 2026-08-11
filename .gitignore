@@ -1,0 +1,13 @@
+/target/
+/delphi/demo/Win64/
+/delphi/demo/Win32/
+**/*.dcu
+*.dll
+*.exe
+*.exp
+*.lib
+*.pdb
+*.res
+*.identcache
+*.local
+*.~*

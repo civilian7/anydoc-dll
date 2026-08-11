@@ -1,0 +1,9 @@
+# CRT 정적 링크 — VCRUNTIME140.dll / UCRT 재배포 의존을 제거해 단일 DLL 로 배포한다.
+# RUSTFLAGS 환경변수 대신 여기에 고정해야 전역 오염 없이 타깃별로 적용된다.
+# 검증 결과 32/64 양쪽 모두 OS 기본 DLL(kernel32/ntdll/bcryptprimitives)만 남는다.
+
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
+
+[target.i686-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
